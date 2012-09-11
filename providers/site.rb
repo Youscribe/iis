@@ -28,23 +28,56 @@ action :add do
     cmd = "#{appcmd} add site /name:\"#{@new_resource.site_name}\""
     cmd << " /id:#{@new_resource.site_id}" if @new_resource.site_id
     cmd << " /physicalPath:\"#{win_friendly_path(@new_resource.path)}\"" if @new_resource.path
-    if @new_resource.bindings
-		cmd << " /bindings:#{@new_resource.bindings}"
-	else
-		cmd << " /bindings:#{@new_resource.protocol}/*"
-		cmd << ":#{@new_resource.port}:" if @new_resource.port
-		cmd << "#{@new_resource.host_header}" if @new_resource.host_header
-	end
+  if @new_resource.bindings
+    cmd << " /bindings:#{@new_resource.bindings}"
+  else
+    cmd << " /bindings:#{@new_resource.protocol}/*"
+    cmd << ":#{@new_resource.port}:" if @new_resource.port
+    cmd << "#{@new_resource.host_header}" if @new_resource.host_header
+  end
     shell_out!(cmd, {:returns => [0,42]})
-	
-	if @new_resource.application_pool
-		shell_out!("#{appcmd} set app \"#{@new_resource.site_name}/\" /applicationPool:\"#{@new_resource.application_pool}\"", {:returns => [0,42]})
-	end
+  if @new_resource.application_pool
+    shell_out!("#{appcmd} set app \"#{@new_resource.site_name}/\" /applicationPool:\"#{@new_resource.application_pool}\"", {:returns => [0,42]})
+  end
     @new_resource.updated_by_last_action(true)
     Chef::Log.info("#{@new_resource} added new site '#{@new_resource.site_name}'")
   else
     Chef::Log.debug("#{@new_resource} site already exists - nothing to do")
   end
+end
+
+action :config do
+
+  if @new_resource.port
+    cmd = "#{appcmd} set site \"#{@new_resource.site_name}\" "
+    cmd << "/bindings:#{@new_resource.protocol.to_s}/*:#{@new_resource.port}:"
+    Chef::Log.debug(cmd)
+    shell_out!(cmd) 
+  end
+
+  if @new_resource.path
+    cmd = "#{appcmd} set vdir \"#{@new_resource.site_name}/\" "
+    cmd << "/physicalPath:\"#{@new_resource.path}\""
+	  Chef::Log.debug(cmd)
+	  shell_out!(cmd)
+  end
+
+  # pools looks like it's actually part of the app
+  # if @new_resource.pool_name # it's actually set on the app
+	#   cmd = "#{appcmd} set app \"#{@new_resource.site_name}\"/ "
+  #   cmd << "/applicationPool:\"#{@new_resource.pool_name}\""
+	#   Chef::Log.debug(cmd)
+	#   shell_out!(cmd) 
+  # end
+
+  if @new_resource.host_header
+    # Need to figure out how to set host_header
+	  #cmd = "#{appcmd} set site \"#{@new_resource.site_name}\" "
+    #cmd << "/applicationPool:\"#{@new_resource.pool_name}\""
+	  #Chef::Log.debug(cmd)
+	  #shell_out!(cmd) 
+  end
+
 end
 
 action :delete do

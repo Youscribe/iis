@@ -18,7 +18,7 @@
 # limitations under the License.
 #
 
-actions :add, :delete, :start, :stop, :restart
+actions :add, :delete, :start, :stop, :restart, :config
 
 attribute :site_name, :kind_of => String, :name_attribute => true
 attribute :site_id, :kind_of => Integer
@@ -26,6 +26,7 @@ attribute :port, :kind_of => Integer
 attribute :path, :kind_of => String
 attribute :protocol, :kind_of => Symbol, :default => :http, :equal_to => [:http, :https]
 attribute :host_header, :kind_of => String, :default => nil
+attribute :bindings, :kind_of => String, :default => nil
 attribute :application_pool, :kind_of => String, :default => nil
 
 attr_accessor :exists, :running

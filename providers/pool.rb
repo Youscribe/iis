@@ -51,6 +51,9 @@ action :config do
 	cmd = "#{appcmd} set apppool /apppool.name:#{@new_resource.pool_name} /enable32BitAppOnWin64:#{@new_resource.thirty_two_bit}"
 	Chef::Log.debug(cmd)
 	shell_out!(cmd)
+	cmd = "#{appcmd} set apppool /apppool.name:#{@new_resource.pool_name} /managedRuntimeVersion:v#{@new_resource.runtime_version}"
+	Chef::Log.debug(cmd) if @new_resource.runtime_version
+	shell_out!(cmd)
 end
 
 action :delete do
@@ -97,7 +100,7 @@ def load_current_resource
   cmd = shell_out("#{appcmd} list apppool")
   # APPPOOL "DefaultAppPool" (MgdVersion:v2.0,MgdMode:Integrated,state:Started)
   Chef::Log.debug("#{@new_resource} list apppool command output: #{cmd.stdout}")
-  result = cmd.stdout.match(/^APPPOOL\s\"#{@new_resource.pool_name}.*/) if cmd.stderr.empty?
+  result = cmd.stdout.match(/^APPPOOL\s\"#{@new_resource.pool_name}\".*/) if cmd.stderr.empty?
   Chef::Log.debug("#{@new_resource} current_resource match output: #{result}")
   if result
     @current_resource.exists = true
