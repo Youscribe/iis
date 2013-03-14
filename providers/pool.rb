@@ -1,9 +1,10 @@
 #
 # Author:: Kendrick Martin (kendrick.martin@webtrends.com)
+# Contributor:: David Dvorak (david.dvorak@webtrends.com)
 # Cookbook Name:: iis
-# Provider:: site
+# Provider:: pool
 #
-# Copyright:: 2011, Webtrends
+# Copyright:: 2011, Webtrends Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,6 +55,14 @@ action :config do
 	cmd = "#{appcmd} set apppool /apppool.name:#{@new_resource.pool_name} /managedRuntimeVersion:v#{@new_resource.runtime_version}"
 	Chef::Log.debug(cmd) if @new_resource.runtime_version
 	shell_out!(cmd)
+	if @new_resource.pool_username != nil and @new_resource.pool_password != nil
+		cmd = "#{appcmd} set config /section:applicationPools"
+		cmd << " /[name='#{@new_resource.pool_name}'].processModel.identityType:SpecificUser"
+		cmd << " /[name='#{@new_resource.pool_name}'].processModel.userName:\"#{@new_resource.pool_username}\""
+		cmd << " /[name='#{@new_resource.pool_name}'].processModel.password:\"#{@new_resource.pool_password}\""
+		Chef::Log.debug(cmd)
+		shell_out!(cmd)
+	end
 end
 
 action :delete do
@@ -94,13 +103,22 @@ action :restart do
   Chef::Log.info("#{@new_resource} restarted")
 end
 
+action :recycle do
+  shell_out!("#{appcmd} recycle APPPOOL \"#{site_identifier}\"")
+  @new_resource.updated_by_last_action(true)
+  Chef::Log.info("#{@new_resource} recycled")
+end
+
 def load_current_resource
   @current_resource = Chef::Resource::IisPool.new(@new_resource.name)
   @current_resource.pool_name(@new_resource.pool_name)
   cmd = shell_out("#{appcmd} list apppool")
   # APPPOOL "DefaultAppPool" (MgdVersion:v2.0,MgdMode:Integrated,state:Started)
   Chef::Log.debug("#{@new_resource} list apppool command output: #{cmd.stdout}")
-  result = cmd.stdout.match(/^APPPOOL\s\"#{@new_resource.pool_name}\".*/) if cmd.stderr.empty?
+  if cmd.stderr.empty?
+    result = cmd.stdout.gsub(/\r\n?/, "\n") # ensure we have no carriage returns
+    result = result.match(/^APPPOOL\s\"(#{new_resource.pool_name})\"\s\(MgdVersion:(.*),MgdMode:(.*),state:(.*)\)$/)
+  end
   Chef::Log.debug("#{@new_resource} current_resource match output: #{result}")
   if result
     @current_resource.exists = true

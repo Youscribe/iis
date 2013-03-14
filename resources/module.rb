@@ -1,9 +1,9 @@
 #
-# Author:: Seth Chisamore (<schisamo@opscode.com>)
+# Author:: Jon DeCamp (<jon.decamp@nordstrom.com>)
 # Cookbook Name:: iis
-# Attribute:: default
+# Resource:: module
 #
-# Copyright:: Copyright (c) 2011 Opscode, Inc.
+# Copyright:: 2012, Nordstrom, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +18,16 @@
 # limitations under the License.
 #
 
-default['iis']['accept_eula'] = false
+actions :add, :delete
 
-default['iis']['home']       = "#{ENV['WINDIR']}\\System32\\inetsrv"
-default['iis']['conf_dir']   = "#{iis['home']}\\config"
-default['iis']['pubroot']    = "#{ENV['SYSTEMDRIVE']}\\inetpub"
-default['iis']['docroot']    = "#{iis['pubroot']}\\wwwroot"
-default['iis']['log_dir']    = "#{iis['pubroot']}\\logs\\LogFiles"
-default['iis']['cache_dir']  = "#{iis['pubroot']}\\temp"
-default['iis']['components'] = "IIS7"
+attribute :module_name, :kind_of => String, :name_attribute => true
+attribute :type, :kind_of => String, :default => nil
+attribute :precondition, :kind_of => String, :default => nil
+attribute :application, :kind_of => String, :default => nil
+
+attr_accessor :exists
+
+def initialize(*args)
+  super
+  @action = :add
+end
